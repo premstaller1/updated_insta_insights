@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import time
+import json
 
 # API utility functions
 def makeApiCall(url, endpointParams, debug='no'):
@@ -15,24 +16,20 @@ def makeApiCall(url, endpointParams, debug='no'):
         print(f"Response: {data['json_data']}")
     return data
 
-def getCreds(profile='productminimal'):
-    creds = {
-        'productminimal': {
-            'access_token': 'EAAG24jaJaYIBO41JyeHF6XGw3gIv0ZB3HY0WT9EebvZBWmGZBrCeZANUMVTqB2nVI2qCGaqBtFDmO0EvDtDtRaDIoOzr7hc0JbKiKW3UyZChQZCOnNv1MMsih0Y7AEOhFnXRbPazwP3rlNod1FsbabwTQbDDIcmm7AVaKDYtL3Q2iLzT7Gc7Kl3RnS1mI1pie1Fts8U1H9',
-            'instagram_account_id': '17841447229527043',
-            'graph_domain': 'https://graph.facebook.com',
-            'graph_version': 'v21.0',
-            'debug': 'yes'
-        },
-        'productsdesign': {
-            'access_token': 'EAAG24jaJaYIBO41JyeHF6XGw3gIv0ZB3HY0WT9EebvZBWmGZBrCeZANUMVTqB2nVI2qCGaqBtFDmO0EvDtDtRaDIoOzr7hc0JbKiKW3UyZChQZCOnNv1MMsih0Y7AEOhFnXRbPazwP3rlNod1FsbabwTQbDDIcmm7AVaKDYtL3Q2iLzT7Gc7Kl3RnS1mI1pie1Fts8U1H9',
-            'instagram_account_id': '17841419699397187',
-            'graph_domain': 'https://graph.facebook.com',
-            'graph_version': 'v21.0',
-            'debug': 'yes'
-        }
-    }
-    return creds.get(profile, None)
+def getCreds(profile='productminimal', file_path='data/metadata.json'):
+    # Load JSON data from the file
+    with open(file_path, 'r') as file:
+        metadata = json.load(file)
+
+    # Check if the profile exists in the metadata
+    if profile not in metadata:
+        raise ValueError(f"Invalid profile name. Available profiles: {list(metadata.keys())}")
+
+    # Fetch the credentials for the given profile
+    creds = metadata[profile]
+    creds['profile_name'] = profile  # Add the profile name for reference
+    creds['debug'] = 'yes'  # Enable debug mode
+    return creds
 
 def getInstagramInsights(profile, metric, period=None, metric_type=None, breakdown=None, since=None, until=None, timeframe=None):
     creds = getCreds(profile)

@@ -1,14 +1,17 @@
 import requests
 import datetime
+import json
 
+# Function to make API calls
 def makeApiCall(url, endpointParams, debug='no'):
     data = requests.get(url, endpointParams)
     response = dict()
     response['url'] = url
     response['endpoint_params'] = endpointParams
     response['json_data'] = data.json()
-
     return response
+
+# Function to get a long-lived access token
 def getLongLivedAccessToken(params):
     url = params['graph_domain'] + '/oauth/access_token'
     endpointParams = dict()
@@ -18,6 +21,7 @@ def getLongLivedAccessToken(params):
     endpointParams['fb_exchange_token'] = params['access_token']
     return makeApiCall(url, endpointParams, params['debug'])
 
+# Function to debug the access token
 def debugAccessToken(params):
     endpointParams = dict()
     endpointParams['input_token'] = params['access_token']
@@ -25,12 +29,14 @@ def debugAccessToken(params):
     url = params['graph_domain'] + '/debug_token'
     return makeApiCall(url, endpointParams, params['debug'])
 
+# Function to print token expiration
 def printTokenExpiration(creds):
     response = debugAccessToken(creds)
     expiration = datetime.datetime.fromtimestamp(response['json_data']['data']['expires_at'])
     profile = creds.get('profile_name', 'Unknown')
     print(f"\n{profile.capitalize()}: Token Expires at: {expiration}")
 
+# Function to update the access token
 def updateAccessToken(creds):
     response = getLongLivedAccessToken(creds)
     new_access_token = response['json_data'].get('access_token', None)
@@ -42,45 +48,33 @@ def updateAccessToken(creds):
         print(new_access_token)
     return creds
 
-def getCreds(profile='productminimal'):
-    creds = dict()  # dictionary to hold everything
-    creds['profile_name'] = profile
+# Function to fetch credentials for a given profile
+def getCreds(profile='productminimal', file_path='data/metadata.json'):
+    # Load JSON data from the file
+    with open(file_path, 'r') as file:
+        metadata = json.load(file)
 
-    # Default credentials for productminimal
-    if profile == 'productminimal':
-        creds['access_token'] = 'EAAG24jaJaYIBOwMx8ITrQhvuZCj4fL5tb9DruOfnP3egAoACHGQ9DasfSjZBeSKPBGnCljIygXaZBnaRMHkhXlg66ZAsxZC73WUbH5ZA5JHUxTRJeRa81z4dxI0pUP6b7ogPd8LorEuRAZAE3juOBEx2K6EmN7H0xSLjh4zqVlhoDMdFlJZA42TyM69hSsdr0s7DiDtVTjE3'
-        creds['client_id'] = '482557670549890'
-        creds['client_secret'] = 'd62937e7f31973871d86b8242430b73e'
-        creds['graph_domain'] = 'https://graph.facebook.com'
-        creds['graph_version'] = 'v20.0'
-        creds['endpoint_base'] = creds['graph_domain'] + '/' + creds['graph_version'] + '/'
-        creds['page_id'] = '482557670549890'
-        creds['instagram_account_id'] = '17841447229527043'
-        creds['ig_username'] = 'productminimal'
+    # Check if the profile exists in the metadata
+    if profile not in metadata:
+        raise ValueError(f"Invalid profile name. Available profiles: {list(metadata.keys())}")
 
-    # Credentials for productsdesign
-    elif profile == 'productsdesign':
-        creds['access_token'] = 'EAAG24jaJaYIBOwMx8ITrQhvuZCj4fL5tb9DruOfnP3egAoACHGQ9DasfSjZBeSKPBGnCljIygXaZBnaRMHkhXlg66ZAsxZC73WUbH5ZA5JHUxTRJeRa81z4dxI0pUP6b7ogPd8LorEuRAZAE3juOBEx2K6EmN7H0xSLjh4zqVlhoDMdFlJZA42TyM69hSsdr0s7DiDtVTjE3'
-        creds['client_id'] = '482557670549890'
-        creds['client_secret'] = 'd62937e7f31973871d86b8242430b73e'
-        creds['graph_domain'] = 'https://graph.facebook.com'
-        creds['graph_version'] = 'v20.0'
-        creds['endpoint_base'] = creds['graph_domain'] + '/' + creds['graph_version'] + '/'
-        creds['page_id'] = '482557670549890'
-        creds['instagram_account_id'] = '17841419699397187'
-        creds['ig_username'] = 'productsdesign'
-
-    else:
-        raise ValueError("Invalid profile name. Use 'productminimal' or 'productsdesign'.")
-
+    # Fetch the credentials for the given profile
+    creds = metadata[profile]
+    creds['profile_name'] = profile  # Add the profile name for reference
     creds['debug'] = 'yes'  # Enable debug mode
-
     return creds
 
 # Example usage
-creds_minimal = getCreds('productminimal')
-creds_design = getCreds('productsdesign')
+try:
+    creds_minimal = getCreds('productminimal')
+    creds_design = getCreds('productsdesign')
 
-# Separately call the printTokenExpiration and updateAccessToken functions
-printTokenExpiration(creds_minimal)
-printTokenExpiration(creds_design)
+    # Print token expiration for both profiles
+    printTokenExpiration(creds_minimal)
+    printTokenExpiration(creds_design)
+
+    # Optionally update tokens (if needed)
+    #updateAccessToken(creds_minimal)
+    #updateAccessToken(creds_design)
+except Exception as e:
+    print(f"Error: {e}")
